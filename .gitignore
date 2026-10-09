@@ -1,0 +1,85 @@
+# ==========================================
+# Git Ignore for Health Prediction System
+# ==========================================
+
+# 1. Environment Variables & Secrets (CRITICAL)
+.env
+.env.local
+.env.*.local
+*.env
+*.key
+*.pem
+!.env.example
+
+# 2. Java Compiled Bytecode & JAR Archives
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+libs/
+bin/
+build/
+target/
+out/
+*.log
+*.ctxt
+.mtj.tmp/
+
+# 3. Python Virtual Environments & Caches
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# 4. IDE, Editors & Tooling
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# 5. OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk

@@ -1,0 +1,49 @@
+===============================================================
+           HEALTH PREDICTION & WELLNESS SYSTEM                 
+               CARDIAC RISK ASSESSMENT REPORT                  
+===============================================================
+
+Generated On   : 2026-10-09 13:24:40
+Diagnostic Result : Defective Heart
+Calculated Risk: 90.9% (High Risk)
+
+---------------------------------------------------------------
+CLINICAL INPUT BIOMARKERS:
+---------------------------------------------------------------
+• Age                    : 58 years
+• Sex                    : Female (0)
+• Chest Pain Type        : 0: Typical Angina
+• Resting Blood Pressure : 100 mm Hg
+• Serum Cholesterol      : 248 mg/dL
+• Fasting Blood Sugar    : <= 120 mg/dL Normal (0)
+• Resting ECG            : 0: Normal
+• Max Heart Rate         : 122 bpm
+• Exercise Induced Angina: No Exercise Angina (0)
+• ST Depression (Oldpeak): 1.0
+• Peak ST Slope          : 1: Flat
+• Major Vessels (CA)     : 0 Major Vessels
+• Thallium Stress Result : 2: Fixed Defect
+
+---------------------------------------------------------------
+IDENTIFIED CLINICAL RISK FACTORS:
+---------------------------------------------------------------
+• High Serum Cholesterol (248 mg/dL - Target < 200)
+• Mild ST Depression (1.0)
+• Abnormal Thallium Stress Test (Perfusion Defect)
+
+---------------------------------------------------------------
+RECOMMENDED CLINICAL ACTION PLAN:
+---------------------------------------------------------------
+CLINICAL ACTION PLAN & PRECAUTIONS:
+
+1. Urgent Consultation: Schedule a comprehensive evaluation with a certified cardiologist.
+2. Diagnostic Follow-up: Consider an Echocardiogram, Angiography, or Stress ECG.
+3. Dietary Sodium Restriction: Limit sodium to < 2,000 mg/day to lower myocardial workload.
+4. Medication Adherence: Strictly follow prescribed anti-hypertensives or statins.
+5. Lifestyle Moderation: Complete tobacco cessation, restrict alcohol, and avoid overexertion.
+
+===============================================================
+DISCLAIMER: This automated report is generated using Machine    
+Learning algorithms for preliminary screening purposes only.   
+It does not replace professional clinical diagnosis.          
+===============================================================

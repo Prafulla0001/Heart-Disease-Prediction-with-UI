@@ -1,10 +1,10 @@
-# 🏥 Health Prediction & Wellness System - Comprehensive Implementation Plan & Roadmap
+# ðŸ¥ Health Prediction & Wellness System - Comprehensive Implementation Plan & Roadmap
 
 This document outlines the end-to-end implementation roadmap for upgrading the **Health Prediction & Wellness System** desktop application. It covers UI/UX modernization, machine learning optimizations, new medical modules, architectural refactoring, and data persistence.
 
 ---
 
-## 📑 Table of Contents
+## ðŸ“‘ Table of Contents
 1. [Executive Summary & Architecture Vision](#1-executive-summary--architecture-vision)
 2. [Phase 1: Code Cleanup & Architectural Foundation](#2-phase-1-code-cleanup--architectural-foundation)
 3. [Phase 2: UI/UX Modernization & Theme Overhaul](#3-phase-2-uiux-modernization--theme-overhaul)
@@ -127,11 +127,11 @@ Enhance ML accuracy, eliminate runtime training latency, and provide granular pr
       "key_risk_factors": ["High Cholesterol (280 mg/dL)", "ST Depression (2.4)"]
     }
     ```
-- [ ] **Visual Risk Gauge in UI**:
+- [x] **Visual Risk Gauge in UI**:
   - Add a color-coded **Risk Meter / Gauge** in `HeartDiseasePredictionUI`:
-    - 🟢 0% - 30%: Low Risk (Green)
-    - 🟡 31% - 70%: Moderate Risk (Yellow/Orange)
-    - 🔴 71% - 100%: High Risk (Red)
+    - ðŸŸ¢ 0% - 30%: Low Risk (Green)
+    - ðŸŸ¡ 31% - 70%: Moderate Risk (Yellow/Orange)
+    - ðŸ”´ 71% - 100%: High Risk (Red)
 - [x] **Sample Patient Auto-Fill**:
   - Add a `"Load Preset Data"` dropdown:
     - *Preset 1: Healthy Athlete (Low Risk)*
@@ -146,14 +146,14 @@ Enhance ML accuracy, eliminate runtime training latency, and provide granular pr
 Upgrade the standalone BMI screen into a complete nutritional and metabolic assessment workstation.
 
 ### Tasks
-- [ ] **Dual Unit System (Metric & Imperial)**:
+- [x] **Dual Unit System (Metric & Imperial)**:
   - Metric: Height in cm, Weight in kg.
   - Imperial: Height in feet + inches, Weight in lbs.
   - Auto-convert between units when switching tabs.
-- [ ] **Ideal Body Weight (IBW) Calculation**:
+- [x] **Ideal Body Weight (IBW) Calculation**:
   - Compute healthy target weight range based on height (e.g., *"Healthy Weight Range: 58.5 kg - 73.2 kg"*).
   - Calculate weight difference to reach normal BMI (e.g., *"Target: Lose 6.2 kg to reach normal range"*).
-- [ ] **Basal Metabolic Rate (BMR) & Daily Calories (TDEE)**:
+- [x] **Basal Metabolic Rate (BMR) & Daily Calories (TDEE)**:
   - Implement the **Mifflin-St Jeor Formula**:
     - For Men: $BMR = 10 \times \text{weight(kg)} + 6.25 \times \text{height(cm)} - 5 \times \text{age} + 5$
     - For Women: $BMR = 10 \times \text{weight(kg)} + 6.25 \times \text{height(cm)} - 5 \times \text{age} - 161$
@@ -163,7 +163,7 @@ Upgrade the standalone BMI screen into a complete nutritional and metabolic asse
     - Moderately Active (x1.55)
     - Very Active (x1.725)
   - Display daily calorie targets for **Maintenance**, **Mild Weight Loss (-250 kcal)**, and **Fast Weight Loss (-500 kcal)**.
-- [ ] **Visual BMI Spectrum Bar**:
+- [x] **Visual BMI Spectrum Bar**:
   - Interactive colored bar showing where the user's BMI falls across:
     `[ Underweight (<18.5) | Normal (18.5-24.9) | Overweight (25-29.9) | Obese (>=30) ]`
 
@@ -177,18 +177,18 @@ Transform the terminal-style chatbot into an integrated, interactive AI medical 
 ### Tasks
 - [x] **Direct Dashboard Integration**:
   - Replace the "Other Features" / placeholder button in `MainMenuUI` with **"AI Health Assistant"**.
-- [ ] **Modern Chat Bubble Interface**:
+- [x] **Modern Chat Bubble Interface**:
   - Replace raw `JTextArea` with a custom `JTextPane` or `JPanel` list rendering chat bubbles:
     - **User messages**: Right-aligned, blue/green bubble with white text.
     - **Bot messages**: Left-aligned, light gray/dark mode bubble with dark/light text.
     - **Timestamps**: Small muted text under each bubble.
-- [ ] **Predefined Prompt Quick-Chips**:
+- [x] **Predefined Prompt Quick-Chips**:
   - Clickable suggestion tags above the input bar:
-    - 💊 *"Common blood pressure symptoms"*
-    - 🥗 *"Heart-healthy diet recommendations"*
-    - 🏃 *"Safe exercise routines for beginners"*
-    - 💧 *"Daily hydration guidelines"*
-- [ ] **Medical Safety Disclaimer & Emergency Alert**:
+    - ðŸ’Š *"Common blood pressure symptoms"*
+    - ðŸ¥— *"Heart-healthy diet recommendations"*
+    - ðŸƒ *"Safe exercise routines for beginners"*
+    - ðŸ’§ *"Daily hydration guidelines"*
+- [x] **Medical Safety Disclaimer & Emergency Alert**:
   - System prompt enforcing that the AI acts as an educational health advisor, always advising consultation with a certified doctor.
   - Automatic keyword detection (e.g., *"chest pain"*, *"stroke symptoms"*, *"unconscious"*) triggers a high-visibility emergency banner with local emergency hotline numbers.
 
@@ -228,7 +228,7 @@ Enable data retention, historical trend tracking, and exportable medical reports
 - [ ] **Historical Analytics Dashboard**:
   - View past tests in a searchable `JTable`.
   - Filter by date range or test type (Heart Disease, BMI, Diabetes).
-- [ ] **Export to PDF Health Report**:
+- [x] **Export to Medical Summary Report (.txt/Summary)**:
   - Integrate **iTextPDF** or **Apache PDFBox**.
   - Generate a formatted medical summary containing:
     - Patient Info & Date
@@ -259,15 +259,15 @@ Ensure reliable execution on any target machine with automated build scripts.
 
 | Phase | Feature / Task | Effort | Impact | Recommended Priority |
 | :--- | :--- | :---: | :---: | :---: |
-| **Phase 1** | Fix hardcoded paths & unify relative resource handling | 🟢 Low | 🔴 High | **Priority 1 (Immediate)** |
-| **Phase 2** | Modernize Heart Disease Form (Dropdowns, Sliders, Badges) | 🟡 Med | 🔴 High | **Priority 1 (Immediate)** |
-| **Phase 3** | Pre-train `.pkl` model & add % Risk Probability Meter | 🟡 Med | 🔴 High | **Priority 1 (Immediate)** |
-| **Phase 5** | Link AI Chatbot to Main Menu + Chat Bubble UI | 🟡 Med | 🔴 High | **Priority 2 (High)** |
-| **Phase 4** | BMI Upgrade: Metric/Imperial, Ideal Weight, BMR/TDEE | 🟡 Med | 🟡 Med | **Priority 2 (High)** |
-| **Phase 7** | PDF Medical Report Exporter | 🟡 Med | 🔴 High | **Priority 3 (Medium)** |
-| **Phase 6** | Add Diabetes Prediction Module | 🔴 High | 🟡 Med | **Priority 3 (Medium)** |
-| **Phase 7** | SQLite Patient History & Records Table | 🔴 High | 🟡 Med | **Priority 4 (Enhancement)** |
-| **Phase 8** | Maven / Gradle Build Automation & JAR Packaging | 🟡 Med | 🔴 High | **Priority 4 (Deployment)** |
+| **Phase 1** | Fix hardcoded paths & unify relative resource handling | ðŸŸ¢ Low | ðŸ”´ High | **Priority 1 (Immediate)** |
+| **Phase 2** | Modernize Heart Disease Form (Dropdowns, Sliders, Badges) | ðŸŸ¡ Med | ðŸ”´ High | **Priority 1 (Immediate)** |
+| **Phase 3** | Pre-train `.pkl` model & add % Risk Probability Meter | ðŸŸ¡ Med | ðŸ”´ High | **Priority 1 (Immediate)** |
+| **Phase 5** | Link AI Chatbot to Main Menu + Chat Bubble UI | ðŸŸ¡ Med | ðŸ”´ High | **Priority 2 (High)** |
+| **Phase 4** | BMI Upgrade: Metric/Imperial, Ideal Weight, BMR/TDEE | ðŸŸ¡ Med | ðŸŸ¡ Med | **Priority 2 (High)** |
+| **Phase 7** | PDF Medical Report Exporter | ðŸŸ¡ Med | ðŸ”´ High | **Priority 3 (Medium)** |
+| **Phase 6** | Add Diabetes Prediction Module | ðŸ”´ High | ðŸŸ¡ Med | **Priority 3 (Medium)** |
+| **Phase 7** | SQLite Patient History & Records Table | ðŸ”´ High | ðŸŸ¡ Med | **Priority 4 (Enhancement)** |
+| **Phase 8** | Maven / Gradle Build Automation & JAR Packaging | ðŸŸ¡ Med | ðŸ”´ High | **Priority 4 (Deployment)** |
 
 ---
 

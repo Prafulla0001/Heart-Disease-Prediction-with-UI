@@ -1,15 +1,20 @@
-import sys
-import os
 import json
-import warnings
+import sys
+from pathlib import Path
+
 import numpy as np
-import pandas as pd
 import joblib
 
-warnings.filterwarnings('ignore')
 
-MODEL_PATH = 'models/heart_model.pkl'
-SCALER_PATH = 'models/heart_scaler.pkl'
+ROOT = Path(__file__).resolve().parent
+MODEL_PATH = ROOT / "models" / "heart_model.pkl"
+SCALER_PATH = ROOT / "models" / "heart_scaler.pkl"
+FEATURES_PATH = ROOT / "models" / "heart_features.pkl"
+EXPECTED_FEATURES = 13
+EXPECTED_FEATURE_NAMES = [
+    "age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
+    "thalach", "exang", "oldpeak", "slope", "ca", "thal",
+]
 
 def get_risk_factors(data):
     """Analyze individual features against standard clinical thresholds"""
@@ -59,62 +64,53 @@ def get_risk_factors(data):
     return factors
 
 def predict(input_values):
-    try:
-        # Load serialized model & scaler if available
-        if os.path.exists(MODEL_PATH) and os.path.exists(SCALER_PATH):
-            model = joblib.load(MODEL_PATH)
-            scaler = joblib.load(SCALER_PATH)
-        else:
-            # Fallback training on the fly
-            df = pd.read_csv('heart.csv')
-            X = df.drop(columns='target', axis=1)
-            Y = df['target']
-            from sklearn.ensemble import RandomForestClassifier
-            from sklearn.preprocessing import StandardScaler
-            scaler = StandardScaler()
-            X_scaled = scaler.fit_transform(X)
-            model = RandomForestClassifier(n_estimators=100, random_state=42)
-            model.fit(X_scaled, Y)
+    values = np.asarray(input_values, dtype=float)
+    if values.shape != (EXPECTED_FEATURES,) or not np.isfinite(values).all():
+        raise ValueError(f"Expected {EXPECTED_FEATURES} finite numeric feature values.")
+    if not MODEL_PATH.is_file() or not SCALER_PATH.is_file() or not FEATURES_PATH.is_file():
+        raise FileNotFoundError(
+            "Pre-trained heart model is missing. Run train_heart_model.py first."
+        )
 
-        input_arr = np.asarray(input_values, dtype=float).reshape(1, -1)
-        scaled_input = scaler.transform(input_arr)
-        
-        prediction = model.predict(scaled_input)[0]
-        
-        # Calculate risk probability
-        if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(scaled_input)[0]
-            # Probability of target == 1 (defective heart)
-            risk_prob = probs[1] * 100.0
-        else:
-            risk_prob = 95.0 if prediction == 1 else 10.0
+    model = joblib.load(MODEL_PATH)
+    scaler = joblib.load(SCALER_PATH)
+    feature_names = joblib.load(FEATURES_PATH)
+    if feature_names != EXPECTED_FEATURE_NAMES:
+        raise ValueError("Saved model feature names or order do not match inference inputs.")
 
-        risk_level = "High Risk" if risk_prob >= 70.0 else ("Moderate Risk" if risk_prob >= 35.0 else "Low Risk")
-        diagnosis = "Defective Heart" if prediction == 1 else "Healthy Heart"
-        risk_factors = get_risk_factors(input_values)
+    scaled_input = scaler.transform(values.reshape(1, -1))
+    prediction = int(model.predict(scaled_input)[0])
+    if not hasattr(model, "predict_proba"):
+        raise TypeError("The saved classifier does not provide calibrated probabilities.")
 
-        result_dict = {
-            "prediction": diagnosis,
-            "risk_score": round(risk_prob, 1),
-            "risk_level": risk_level,
-            "risk_factors": risk_factors
-        }
+    probabilities = model.predict_proba(scaled_input)[0]
+    classes = list(model.classes_)
+    if 1 not in classes:
+        raise ValueError("The saved classifier is missing target class 1.")
+    risk_prob = float(probabilities[classes.index(1)]) * 100.0
+    risk_level = (
+        "High Risk" if risk_prob >= 70.0
+        else "Moderate Risk" if risk_prob >= 35.0
+        else "Low Risk"
+    )
+    diagnosis = "Defective Heart" if prediction == 1 else "Healthy Heart"
+    risk_factors = get_risk_factors(values.tolist())
 
-        print(json.dumps(result_dict))
-
-    except Exception as e:
-        error_dict = {
-            "error": str(e),
-            "prediction": "Error",
-            "risk_score": 0.0,
-            "risk_level": "Unknown",
-            "risk_factors": []
-        }
-        print(json.dumps(error_dict))
+    return {
+        "prediction": diagnosis,
+        "risk_percentage": round(risk_prob, 1),
+        "risk_score": round(risk_prob, 1),
+        "risk_level": risk_level,
+        "key_risk_factors": risk_factors,
+        "risk_factors": risk_factors,
+    }
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        args = list(map(float, sys.argv[1:]))
-        predict(args)
-    else:
-        print(json.dumps({"error": "No input provided"}))
+    try:
+        if len(sys.argv) != EXPECTED_FEATURES + 1:
+            raise ValueError(f"Provide exactly {EXPECTED_FEATURES} numeric feature values.")
+        values = [float(value) for value in sys.argv[1:]]
+        print(json.dumps(predict(values)))
+    except Exception as error:
+        print(json.dumps({"error": str(error)}))
+        sys.exit(1)

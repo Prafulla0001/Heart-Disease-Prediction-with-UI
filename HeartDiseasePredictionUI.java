@@ -3,6 +3,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.json.JSONArray;
@@ -23,6 +24,8 @@ public class HeartDiseasePredictionUI {
     private static JComboBox<String> slopeCombo;
     private static JComboBox<String> caCombo;
     private static JComboBox<String> thalCombo;
+    private static JTextField patientNameField;
+    private static JCheckBox saveHistoryCheckBox;
 
     // Result Components
     private static JLabel resultStatusLabel;
@@ -94,7 +97,7 @@ public class HeartDiseasePredictionUI {
         formCard.add(presetBar, BorderLayout.NORTH);
 
         // Form Grid
-        JPanel formGrid = new JPanel(new GridLayout(7, 2, 18, 12));
+        JPanel formGrid = new JPanel(new GridLayout(8, 2, 18, 12));
         formGrid.setOpaque(false);
         formGrid.setBorder(new EmptyBorder(5, 0, 5, 0));
 
@@ -141,6 +144,8 @@ public class HeartDiseasePredictionUI {
                 "2: Fixed Defect",
                 "3: Reversible Defect"
         });
+        patientNameField = UIUtils.createStyledTextField("Optional");
+        patientNameField.setToolTipText("Leave blank to save this assessment as Guest Patient.");
 
         // Add to form grid
         formGrid.add(createFieldWrapper("1. Age (Years, 1-120):", ageField));
@@ -156,10 +161,15 @@ public class HeartDiseasePredictionUI {
         formGrid.add(createFieldWrapper("11. Peak Exercise ST Slope:", slopeCombo));
         formGrid.add(createFieldWrapper("12. Major Vessels Colored (CA 0-4):", caCombo));
         formGrid.add(createFieldWrapper("13. Thallium Stress Test (Thal):", thalCombo));
+        formGrid.add(createFieldWrapper("Patient Name (optional):", patientNameField));
 
         // Action Panel
         JPanel predictActionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         predictActionPanel.setOpaque(false);
+        saveHistoryCheckBox = new JCheckBox("Save to local history");
+        saveHistoryCheckBox.setOpaque(false);
+        saveHistoryCheckBox.setToolTipText("Opt in to saving this assessment on this computer.");
+        predictActionPanel.add(saveHistoryCheckBox);
         JButton predictBtn = UIUtils.createStyledButton(" Run ML Cardiac Prediction", UIUtils.COLOR_PRIMARY, Color.WHITE, 260, 40);
         predictBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
         predictBtn.addActionListener(e -> performPrediction());
@@ -330,6 +340,8 @@ public class HeartDiseasePredictionUI {
 
     private static void resetForm() {
         ageField.setText("");
+        patientNameField.setText("");
+        saveHistoryCheckBox.setSelected(false);
         sexCombo.setSelectedIndex(0);
         cpCombo.setSelectedIndex(0);
         bpField.setText("");
@@ -411,10 +423,50 @@ public class HeartDiseasePredictionUI {
 
             String outputStr = execRes.getOutput().trim();
             JSONObject json = new JSONObject(outputStr);
+            if (json.has("error")) {
+                JOptionPane.showMessageDialog(
+                        null,
+                        "Prediction failed:\n" + json.getString("error"),
+                        "Prediction Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
 
             String prediction = json.optString("prediction", "Healthy Heart");
             double riskScore = json.optDouble("risk_score", 0.0);
             String riskLevel = json.optString("risk_level", "Low Risk");
+            if (saveHistoryCheckBox.isSelected()) {
+                JSONObject inputs = new JSONObject();
+                String[] featureNames = {
+                        "age", "sex", "chest_pain_type", "resting_blood_pressure",
+                        "cholesterol", "fasting_blood_sugar", "resting_ecg",
+                        "maximum_heart_rate", "exercise_angina", "st_depression",
+                        "st_slope", "major_vessels", "thalassemia"
+                };
+                for (int i = 0; i < featureNames.length; i++) {
+                    inputs.put(featureNames[i], Double.parseDouble(args[i]));
+                }
+                try {
+                    HealthHistoryStore.saveHeartAssessment(
+                            patientNameField.getText(),
+                            (int) age,
+                            sexCombo.getSelectedIndex() == 0 ? "Male" : "Female",
+                            inputs,
+                            prediction,
+                            riskLevel,
+                            riskScore
+                    );
+                } catch (IOException exception) {
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "Prediction completed, but the assessment could not be saved:\n"
+                                    + exception.getMessage(),
+                            "History Save Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
 
             JSONArray factorsArray = json.optJSONArray("risk_factors");
             StringBuilder factorsText = new StringBuilder();

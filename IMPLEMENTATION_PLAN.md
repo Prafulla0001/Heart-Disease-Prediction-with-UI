@@ -79,10 +79,10 @@ Fix hardcoded paths, unify environment configuration, and create shared utility 
 Transform the application from legacy Windows 95/classic look into a sleek modern desktop application.
 
 ### Tasks
-- [ ] **Integrate FlatLaf (Modern Swing Look & Feel)**:
+- [x] **Integrate FlatLaf (Modern Swing Look & Feel)**:
   - Add `com.formdev.flatlaf` dependency.
   - Implement `FlatLightLaf` and `FlatDarkLaf` with a one-click Theme Switcher in the top navigation bar.
-- [ ] **Modernize Main Menu (`MainMenuUI.java`)**:
+- [x] **Modernize Main Menu (`MainMenuUI.java`)**:
   - Convert the 4-button grid into modern **Interactive Dashboard Cards** with icons, subtitle descriptions, and hover elevation effects.
   - Add quick-stats or health quote of the day banner at the top.
 - [x] **Input Field Overhaul**:
@@ -107,7 +107,7 @@ Transform the application from legacy Windows 95/classic look into a sleek moder
 Enhance ML accuracy, eliminate runtime training latency, and provide granular probabilistic diagnosis.
 
 ### Tasks
-- [ ] **Pre-train & Persist Model (`train_models.py`)**:
+- [x] **Pre-train & Persist Model (`train_heart_model.py`)**:
   - Create an offline training pipeline that tests multiple classifiers:
     - Logistic Regression
     - Random Forest Classifier
@@ -115,7 +115,7 @@ Enhance ML accuracy, eliminate runtime training latency, and provide granular pr
     - Gradient Boosting / XGBoost
   - Standardize features using `StandardScaler`.
   - Save the best performing pipeline into `models/heart_model.pkl` and scaler into `models/heart_scaler.pkl`.
-- [ ] **Instant Prediction Inference (`predict_heart.py`)**:
+- [x] **Instant Prediction Inference (`predict_heart.py`)**:
   - Load the pre-trained model directly with `joblib.load()`.
   - Calculate prediction probabilities using `model.predict_proba(input_data)`.
   - Return structured JSON output containing:
@@ -205,7 +205,7 @@ Expand the platform from single-disease prediction into a multi-disease screenin
   - Inputs: Glucose, Blood Pressure, Skin Thickness, Insulin, BMI, Diabetes Pedigree Function, Age.
   - Model: Random Forest / Logistic Regression classifier (`predict_diabetes.py`).
   - Dedicated UI: `DiabetesPredictionUI.java` with risk assessment and diabetic diet recommendations.
-- [ ] **Module B: Hypertension / Blood Pressure Category Classifier**:
+- [x] **Module B: Hypertension / Blood Pressure Category Classifier**:
   - Real-time classification based on Systolic & Diastolic BP:
     - Normal ($< 120 / < 80$)
     - Elevated ($120-129 / < 80$)
@@ -221,11 +221,11 @@ Expand the platform from single-disease prediction into a multi-disease screenin
 Enable data retention, historical trend tracking, and exportable medical reports.
 
 ### Tasks
-- [ ] **Local Data Persistence (SQLite / H2 / JSON)**:
+- [x] **Local Data Persistence (SQLite / H2 / JSON)**:
   - Database schema for patient profiles:
     - `patients` (id, name, age, gender, created_at)
     - `predictions` (id, patient_id, test_type, input_json, result, risk_score, timestamp)
-- [ ] **Historical Analytics Dashboard**:
+- [x] **Historical Analytics Dashboard**:
   - View past tests in a searchable `JTable`.
   - Filter by date range or test type (Heart Disease, BMI, Diabetes).
 - [x] **Export to Medical Summary Report (.txt/Summary)**:
@@ -245,12 +245,12 @@ Enable data retention, historical trend tracking, and exportable medical reports
 Ensure reliable execution on any target machine with automated build scripts.
 
 ### Tasks
-- [ ] **Project Build Automation**:
+- [x] **Project Build Automation**:
   - Create a standard `pom.xml` (Maven) or `build.gradle` (Gradle) for managing dependencies (FlatLaf, OkHttp3, JSON, iText, SQLite JDBC).
-- [ ] **Python Virtual Environment Management**:
+- [x] **Python Virtual Environment Management**:
   - Include `requirements.txt` (`pandas`, `numpy`, `scikit-learn`, `joblib`).
   - Provide a one-click setup script (`setup_env.bat` / `setup_env.ps1`) that creates the virtual environment and installs dependencies.
-- [ ] **Executable Launcher**:
+- [x] **Executable Launcher**:
   - Package the Java application into an executable JAR (`HealthPredictionSystem.jar`) or native bundle.
 
 ---
@@ -272,3 +272,8 @@ Ensure reliable execution on any target machine with automated build scripts.
 ---
 
 *Generated for: Health Prediction & Wellness System*
+
+### Implementation notes
+- The diabetes module remains pending because the required `diabetes.csv` dataset is not present. A prediction model should not be trained on invented or unrelated data.
+- Local opt-in assessment history is stored in `health_history.json` and can be filtered in the history screen.
+- The Maven executable package and launcher are configured, but packaging could not be verified in this environment because Maven is not installed.

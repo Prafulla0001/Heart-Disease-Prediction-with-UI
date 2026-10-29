@@ -26,6 +26,7 @@ out/
 *.log
 *.ctxt
 .mtj.tmp/
+health_history.json
 
 # 3. Python Virtual Environments & Caches
 .venv/

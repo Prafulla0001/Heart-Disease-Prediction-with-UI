@@ -11,6 +11,7 @@ public class MainMenuUI {
     }
 
     public static void launchMainMenu() {
+        UIUtils.initializeLookAndFeel();
         JFrame frame = new JFrame("Health Prediction & Wellness System");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
@@ -47,12 +48,16 @@ public class MainMenuUI {
         versionBadge.setFont(new Font("Segoe UI", Font.BOLD, 13));
         versionBadge.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         badgePanel.add(versionBadge);
+        JButton themeButton = UIUtils.createStyledButton("Toggle Theme", Color.WHITE, UIUtils.COLOR_PRIMARY, 130, 34);
+        themeButton.setToolTipText("Switch between light and dark themes");
+        themeButton.addActionListener(e -> UIUtils.toggleTheme());
+        badgePanel.add(themeButton);
         headerPanel.add(badgePanel, BorderLayout.EAST);
 
         frame.add(headerPanel, BorderLayout.NORTH);
 
         // Main Center Area with background
-        JPanel centerPanel = new JPanel(new GridBagLayout()) {
+        JPanel centerPanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -68,10 +73,9 @@ public class MainMenuUI {
             }
         };
 
-        // Grid of 4 Feature Cards
-        JPanel gridPanel = new JPanel(new GridLayout(2, 2, 30, 30));
+        JPanel gridPanel = new JPanel(new GridLayout(2, 3, 24, 24));
         gridPanel.setOpaque(false);
-        gridPanel.setBorder(new EmptyBorder(40, 50, 40, 50));
+        gridPanel.setBorder(new EmptyBorder(25, 40, 35, 40));
 
         // Card 1: Heart Disease
         JPanel heartCard = createDashboardCard(
@@ -121,12 +125,44 @@ public class MainMenuUI {
                 }
         );
 
+        JPanel bloodPressureCard = createDashboardCard(
+                "Blood Pressure Check",
+                "Classify systolic and diastolic readings using standard adult screening ranges.",
+                " Check Reading",
+                UIUtils.COLOR_WARNING,
+                () -> {
+                    frame.dispose();
+                    BloodPressureUI.main(new String[]{});
+                }
+        );
+
+        JPanel historyCard = createDashboardCard(
+                "Health History",
+                "Search locally saved screening results by patient, date, or assessment type.",
+                " View History",
+                UIUtils.COLOR_SECONDARY,
+                () -> {
+                    frame.dispose();
+                    HealthHistoryUI.main(new String[]{});
+                }
+        );
+
         gridPanel.add(heartCard);
         gridPanel.add(bmiCard);
         gridPanel.add(tipsCard);
         gridPanel.add(chatbotCard);
+        gridPanel.add(bloodPressureCard);
+        gridPanel.add(historyCard);
 
-        centerPanel.add(gridPanel);
+        JLabel healthQuote = new JLabel(
+                "Small, consistent health habits can make a meaningful difference.",
+                JLabel.CENTER
+        );
+        healthQuote.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        healthQuote.setForeground(UIUtils.COLOR_PRIMARY);
+        healthQuote.setBorder(new EmptyBorder(18, 12, 4, 12));
+        centerPanel.add(healthQuote, BorderLayout.NORTH);
+        centerPanel.add(gridPanel, BorderLayout.CENTER);
         frame.add(centerPanel, BorderLayout.CENTER);
 
         // Footer with Disclaimer

@@ -6,6 +6,38 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 
 public class UIUtils {
+    private static boolean darkTheme;
+    private static boolean lookAndFeelInitialized;
+
+    public static void initializeLookAndFeel() {
+        if (!lookAndFeelInitialized) {
+            applyLookAndFeel(false);
+        }
+    }
+
+    public static boolean toggleTheme() {
+        applyLookAndFeel(!darkTheme);
+        return darkTheme;
+    }
+
+    private static void applyLookAndFeel(boolean dark) {
+        String lookAndFeel = dark
+                ? "com.formdev.flatlaf.FlatDarkLaf"
+                : "com.formdev.flatlaf.FlatLightLaf";
+        try {
+            UIManager.setLookAndFeel(lookAndFeel);
+            darkTheme = dark;
+            lookAndFeelInitialized = true;
+            for (Window window : Window.getWindows()) {
+                SwingUtilities.updateComponentTreeUI(window);
+                window.repaint();
+            }
+        } catch (ClassNotFoundException | InstantiationException
+                 | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            System.err.println("Unable to apply FlatLaf theme: " + e.getMessage());
+        }
+    }
+
     // Theme Palette
     public static final Color COLOR_PRIMARY = new Color(24, 76, 120);       // Medical Navy Blue
     public static final Color COLOR_PRIMARY_DARK = new Color(16, 52, 82);   // Dark Navy

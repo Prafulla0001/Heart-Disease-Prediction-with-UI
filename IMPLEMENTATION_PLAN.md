@@ -40,7 +40,7 @@ v                     v                   v                     v               
 +------------------+  +----------------+  +------------------+  +----------------+  +-----------------+
 |  Heart Disease   |  |   Diabetes     |  | BMI & Metabolic  |  | AI Assistant   |  | Health History  |
 |    Prediction    |  |  Prediction    |  |      Suite       |  | (Chat Bubbles) |  |   & Reports     |
-| (Risk % + Gauge) |  |  (Pima Model)  |  | (BMR, TDEE, Ideal)| | (OpenAI / LLM) |  |  (PDF Export)   |
+| (Risk % + Gauge) |  | (Pima Model)  |  | (BMR, TDEE, Ideal)| | (Multi-provider LLM) |  |  (PDF Export)   |
 +--------+---------+  +-------+--------+  +--------+---------+  +--------+-------+  +--------+--------+
          |                    |                    |                     |                   |
          +--------------------+--------------------+---------------------+-------------------+
@@ -275,5 +275,7 @@ Ensure reliable execution on any target machine with automated build scripts.
 
 ### Implementation notes
 - The diabetes module remains pending because the required `diabetes.csv` dataset is not present. A prediction model should not be trained on invented or unrelated data.
-- Local opt-in assessment history is stored in `health_history.json` and can be filtered in the history screen.
+- The AI assistant supports Grok, Gemini, and optional OmniRoute with automatic fallback across configured providers; see `.env.example`.
+- Local opt-in heart and BMI assessments are stored in `health_history.json` and can be filtered in the history screen.
+- Optional hosted MySQL storage is implemented for opt-in heart and BMI assessments; see [MYSQL_SETUP.md](./MYSQL_SETUP.md). Local JSON remains the default.
 - The Maven executable package and launcher are configured, but packaging could not be verified in this environment because Maven is not installed.

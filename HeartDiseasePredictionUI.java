@@ -2,8 +2,9 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.json.JSONArray;
@@ -166,9 +167,14 @@ public class HeartDiseasePredictionUI {
         // Action Panel
         JPanel predictActionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         predictActionPanel.setOpaque(false);
-        saveHistoryCheckBox = new JCheckBox("Save to local history");
+        saveHistoryCheckBox = new JCheckBox(
+                "Save to " + HealthHistoryStore.getStorageDescription()
+        );
         saveHistoryCheckBox.setOpaque(false);
-        saveHistoryCheckBox.setToolTipText("Opt in to saving this assessment on this computer.");
+        saveHistoryCheckBox.setToolTipText(
+                "Opt in to saving this assessment to "
+                        + HealthHistoryStore.getStorageDescription() + "."
+        );
         predictActionPanel.add(saveHistoryCheckBox);
         JButton predictBtn = UIUtils.createStyledButton(" Run ML Cardiac Prediction", UIUtils.COLOR_PRIMARY, Color.WHITE, 260, 40);
         predictBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -559,7 +565,7 @@ public class HeartDiseasePredictionUI {
             String fileName = "Heart_Assessment_" + timestamp + ".txt";
 
             File reportFile = new File(fileName);
-            try (FileWriter writer = new FileWriter(reportFile)) {
+            try (var writer = Files.newBufferedWriter(reportFile.toPath(), StandardCharsets.UTF_8)) {
                 writer.write("===============================================================\n");
                 writer.write("           HEALTH PREDICTION & WELLNESS SYSTEM                 \n");
                 writer.write("               CARDIAC RISK ASSESSMENT REPORT                  \n");

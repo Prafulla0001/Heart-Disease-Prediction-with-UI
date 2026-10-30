@@ -4,12 +4,16 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.RoundRectangle2D;
+import java.net.URI;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import okhttp3.*;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class HealthChatbot {
@@ -19,8 +23,35 @@ public class HealthChatbot {
     private JScrollPane chatScrollPane;
     private JPanel emergencyBanner;
 
-    private static final String API_KEY = ConfigLoader.get("OPENAI_API_KEY");
-    private static final String API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String SYSTEM_PROMPT = "You are an educational health assistant, not a clinician. Provide cautious, evidence-informed general information; do not diagnose, prescribe, or claim certainty. For possible heart attack or stroke symptoms, severe chest pain, breathing difficulty, fainting, or sudden weakness, tell the user to contact local emergency services immediately and not wait for an online response. Encourage professional medical evaluation for concerning symptoms and remind users that this service cannot replace clinical care.";
+    private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(java.time.Duration.ofSeconds(10))
+            .readTimeout(java.time.Duration.ofSeconds(35))
+            .callTimeout(java.time.Duration.ofSeconds(45))
+            .build();
+
+    private enum ProviderType {
+        OPENAI_COMPATIBLE,
+        GEMINI
+    }
+
+    private static final class ChatProvider {
+        private final String name;
+        private final String key;
+        private final String model;
+        private final String endpoint;
+        private final ProviderType type;
+
+        private ChatProvider(
+                String name, String key, String model, String endpoint, ProviderType type
+        ) {
+            this.name = name;
+            this.key = key;
+            this.model = model;
+            this.endpoint = endpoint;
+            this.type = type;
+        }
+    }
 
     // Offline Medical Knowledge Base for reliable fallback
     private static final Map<String, String> OFFLINE_KNOWLEDGE = new HashMap<>();
@@ -222,80 +253,244 @@ public class HealthChatbot {
     }
 
     private void fetchAIResponse(String question) {
-        // If API key is not configured or offline, use smart offline knowledge base
-        if (API_KEY == null || API_KEY.trim().isEmpty() || API_KEY.contains("your_openai_api_key")) {
-            String lower = question.toLowerCase();
-            String matchedReply = null;
-            for (Map.Entry<String, String> entry : OFFLINE_KNOWLEDGE.entrySet()) {
-                if (lower.contains(entry.getKey())) {
-                    matchedReply = entry.getValue();
-                    break;
-                }
-            }
-
-            if (matchedReply == null) {
-                matchedReply = "Regarding '" + question + "': Maintaining balanced nutrition, regular exercise (150 min/week), adequate hydration, and annual health check-ups are key to optimal health. (Configure OPENAI_API_KEY in .env for full live conversational responses).";
-            }
-
-            final String reply = matchedReply;
+        List<ChatProvider> providers = configuredProviders();
+        if (providers.isEmpty()) {
+            String reply = getOfflineReply(question)
+                    + "\n\nLive AI is not configured. Add a GROK_API_KEY and/or "
+                    + "GEMINI_API_KEY to .env. Tavily provides web search, not chat.";
             Timer timer = new Timer(500, evt -> addBotMessage(reply));
             timer.setRepeats(false);
             timer.start();
             return;
         }
 
-        OkHttpClient client = new OkHttpClient();
+        tryProvider(question, providers, 0, new ArrayList<>());
+    }
 
+    private static List<ChatProvider> configuredProviders() {
+        List<ChatProvider> providers = new ArrayList<>();
+        addProviderIfConfigured(
+                providers, "Grok",
+                ConfigLoader.get("GROK_API_KEY"),
+                ConfigLoader.get("GROK_MODEL", "grok-3-mini"),
+                "https://api.x.ai/v1/chat/completions",
+                ProviderType.OPENAI_COMPATIBLE
+        );
+        addProviderIfConfigured(
+                providers, "Gemini",
+                ConfigLoader.get("GEMINI_API_KEY"),
+                ConfigLoader.get("GEMINI_MODEL", "gemini-2.5-flash"),
+                "https://generativelanguage.googleapis.com/v1beta/models/",
+                ProviderType.GEMINI
+        );
+
+        String omniRouteKey = ConfigLoader.get("OMNIROUTE_API_KEY");
+        String omniRouteBase = ConfigLoader.get("OMNIROUTE_BASE_URL");
+        String omniRouteModel = ConfigLoader.get("OMNIROUTE_MODEL");
+        if (isConfiguredSecret(omniRouteKey)
+                && omniRouteBase != null && !omniRouteBase.isBlank()
+                && omniRouteModel != null && !omniRouteModel.isBlank()) {
+            providers.add(new ChatProvider(
+                    "OmniRoute", omniRouteKey, omniRouteModel, omniRouteBase,
+                    ProviderType.OPENAI_COMPATIBLE
+            ));
+        }
+        return providers;
+    }
+
+    private static void addProviderIfConfigured(
+            List<ChatProvider> providers,
+            String name,
+            String key,
+            String model,
+            String endpoint,
+            ProviderType type
+    ) {
+        if (isConfiguredSecret(key) && model != null && !model.isBlank()) {
+            providers.add(new ChatProvider(name, key, model, endpoint, type));
+        }
+    }
+
+    private static boolean isConfiguredSecret(String value) {
+        return value != null && !value.isBlank()
+                && !value.toLowerCase().contains("your_")
+                && !value.toLowerCase().contains("replace_me");
+    }
+
+    private void tryProvider(
+            String question,
+            List<ChatProvider> providers,
+            int providerIndex,
+            List<String> failures
+    ) {
+        if (providerIndex >= providers.size()) {
+            String message = "All configured AI providers failed:\n"
+                    + String.join("\n", failures)
+                    + "\n\nCheck the provider keys and model names in .env. "
+                    + "A provider quota or configuration error will automatically "
+                    + "fall through to the next configured provider.";
+            SwingUtilities.invokeLater(() -> addBotMessage(message));
+            return;
+        }
+
+        ChatProvider provider = providers.get(providerIndex);
+        final Request request;
         try {
-            JSONObject systemMsg = new JSONObject();
-            systemMsg.put("role", "system");
-            systemMsg.put("content", "You are an expert AI Health & Medical Assistant. Give clear, evidence-based health, nutrition, cardiovascular, and wellness recommendations. Always remind users to seek clinical diagnosis for emergencies.");
+            request = createRequest(provider, question);
+        } catch (RuntimeException exception) {
+            failures.add(provider.name + ": invalid endpoint or request configuration.");
+            tryProvider(question, providers, providerIndex + 1, failures);
+            return;
+        }
 
-            JSONObject userMsg = new JSONObject();
-            userMsg.put("role", "user");
-            userMsg.put("content", question);
+        HTTP_CLIENT.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, java.io.IOException exception) {
+                failures.add(provider.name + ": network request failed.");
+                tryProvider(question, providers, providerIndex + 1, failures);
+            }
 
-            JSONArray messages = new JSONArray();
-            messages.put(systemMsg);
-            messages.put(userMsg);
-
-            JSONObject json = new JSONObject();
-            json.put("model", "gpt-3.5-turbo");
-            json.put("messages", messages);
-            json.put("temperature", 0.7);
-
-            RequestBody body = RequestBody.create(json.toString(), MediaType.parse("application/json"));
-            Request request = new Request.Builder()
-                    .url(API_URL)
-                    .post(body)
-                    .addHeader("Authorization", "Bearer " + API_KEY)
-                    .addHeader("Content-Type", "application/json")
-                    .build();
-
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, java.io.IOException e) {
-                    SwingUtilities.invokeLater(() -> addBotMessage("Network connection notice: Could not connect to online server (" + e.getMessage() + "). Providing offline health guidance."));
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws java.io.IOException {
+            @Override
+            public void onResponse(Call call, Response response) {
+                try (response) {
                     if (response.isSuccessful() && response.body() != null) {
                         try {
-                            JSONObject resp = new JSONObject(response.body().string());
-                            String reply = resp.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
-                            SwingUtilities.invokeLater(() -> addBotMessage(reply.trim()));
-                        } catch (Exception ex) {
-                            SwingUtilities.invokeLater(() -> addBotMessage("Error parsing AI response: " + ex.getMessage()));
+                            String answer = parseAnswer(provider, response.body().string());
+                            if (!answer.isBlank()) {
+                                SwingUtilities.invokeLater(() -> addBotMessage(answer));
+                                return;
+                            }
+                            failures.add(provider.name + ": returned an empty response.");
+                        } catch (RuntimeException exception) {
+                            failures.add(provider.name + ": returned an invalid response.");
                         }
                     } else {
-                        SwingUtilities.invokeLater(() -> addBotMessage("Notice: Online AI service returned status code " + response.code() + ". Please check your API key in .env."));
+                        String detail = response.body() == null
+                                ? ""
+                                : getProviderError(response.body().string(), provider.key);
+                        failures.add(provider.name + " HTTP " + response.code()
+                                + (detail.isBlank() ? "." : ": " + detail));
                     }
+                } catch (java.io.IOException exception) {
+                    failures.add(provider.name + ": could not read its response.");
                 }
-            });
-        } catch (Exception ex) {
-            addBotMessage("Error preparing AI request: " + ex.getMessage());
+                tryProvider(question, providers, providerIndex + 1, failures);
+            }
+        });
+    }
+
+    private static Request createRequest(ChatProvider provider, String question) {
+        if (provider.type == ProviderType.GEMINI) {
+            JSONObject body = new JSONObject()
+                    .put("systemInstruction", new JSONObject()
+                            .put("parts", new JSONArray().put(new JSONObject()
+                                    .put("text", SYSTEM_PROMPT))))
+                    .put("contents", new JSONArray().put(new JSONObject()
+                            .put("role", "user")
+                            .put("parts", new JSONArray().put(new JSONObject()
+                                    .put("text", question)))))
+                    .put("generationConfig", new JSONObject().put("temperature", 0.7));
+            HttpUrl endpoint = HttpUrl.get(
+                    provider.endpoint + provider.model + ":generateContent"
+            );
+            return new Request.Builder()
+                    .url(endpoint)
+                    .post(RequestBody.create(body.toString(), MediaType.parse("application/json")))
+                    .addHeader("x-goog-api-key", provider.key)
+                    .build();
         }
+
+        String endpoint = "OmniRoute".equals(provider.name)
+                ? getChatCompletionsUrl(provider.endpoint)
+                : provider.endpoint;
+        JSONArray messages = new JSONArray()
+                .put(new JSONObject().put("role", "system").put("content", SYSTEM_PROMPT))
+                .put(new JSONObject().put("role", "user").put("content", question));
+        JSONObject body = new JSONObject()
+                .put("model", provider.model)
+                .put("messages", messages)
+                .put("temperature", 0.7);
+        return new Request.Builder()
+                .url(endpoint)
+                .post(RequestBody.create(body.toString(), MediaType.parse("application/json")))
+                .addHeader("Authorization", "Bearer " + provider.key)
+                .build();
+    }
+
+    private static String parseAnswer(ChatProvider provider, String responseBody) {
+        JSONObject response = new JSONObject(responseBody);
+        if (provider.type == ProviderType.GEMINI) {
+            JSONArray parts = response.getJSONArray("candidates")
+                    .getJSONObject(0).getJSONObject("content").getJSONArray("parts");
+            StringBuilder answer = new StringBuilder();
+            for (int i = 0; i < parts.length(); i++) {
+                answer.append(parts.getJSONObject(i).optString("text", ""));
+            }
+            return answer.toString().trim();
+        }
+        Object content = response.getJSONArray("choices")
+                .getJSONObject(0).getJSONObject("message").get("content");
+        return content instanceof String text ? text.trim() : "";
+    }
+
+    private static String getProviderError(String body, String secret) {
+        try {
+            JSONObject response = new JSONObject(body);
+            Object error = response.opt("error");
+            String message = error instanceof JSONObject errorObject
+                    ? errorObject.optString("message", "")
+                    : response.optString("message", "");
+            if (!message.isBlank()) {
+                String safeMessage = message.replace(secret, "[redacted]")
+                        .replaceAll("(?i)Bearer\\s+\\S+", "Bearer [redacted]")
+                        .replaceAll("(?i)(key|token|password)\\s*[:=]\\s*\\S+", "$1=[redacted]");
+                return safeMessage.length() > 240
+                        ? safeMessage.substring(0, 237) + "..."
+                        : safeMessage;
+            }
+        } catch (JSONException exception) {
+            return "";
+        }
+        return "";
+    }
+
+    private static String getOfflineReply(String question) {
+        String lower = question.toLowerCase();
+        for (Map.Entry<String, String> entry : OFFLINE_KNOWLEDGE.entrySet()) {
+            if (lower.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+        return "I can offer general wellness guidance, but a live AI provider is not "
+                + "configured, so I cannot answer that specific question.";
+    }
+
+    private static String getChatCompletionsUrl(String configuredBaseUrl) {
+        URI baseUri = URI.create(configuredBaseUrl.trim());
+        String scheme = baseUri.getScheme();
+        String host = baseUri.getHost();
+        boolean secure = "https".equalsIgnoreCase(scheme);
+        boolean localHttp = "http".equalsIgnoreCase(scheme) && isLoopbackHost(host);
+        if ((!secure && !localHttp)
+                || host == null
+                || baseUri.getUserInfo() != null
+                || baseUri.getQuery() != null
+                || baseUri.getFragment() != null) {
+            throw new IllegalArgumentException(
+                    "OMNIROUTE_BASE_URL must use HTTPS, or HTTP on localhost only, without embedded credentials, query, or fragment."
+            );
+        }
+        String baseUrl = configuredBaseUrl.trim().replaceAll("/+$", "");
+        return baseUrl.endsWith("/chat/completions")
+                ? baseUrl
+                : baseUrl + "/chat/completions";
+    }
+
+    private static boolean isLoopbackHost(String host) {
+        return "localhost".equalsIgnoreCase(host)
+                || "127.0.0.1".equals(host)
+                || "::1".equals(host)
+                || "[::1]".equals(host);
     }
 
     public static void main(String[] args) {

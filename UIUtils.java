@@ -8,6 +8,7 @@ import java.awt.geom.RoundRectangle2D;
 public class UIUtils {
     private static boolean darkTheme;
     private static boolean lookAndFeelInitialized;
+    private static boolean flatLafAvailable;
 
     public static void initializeLookAndFeel() {
         if (!lookAndFeelInitialized) {
@@ -20,6 +21,14 @@ public class UIUtils {
         return darkTheme;
     }
 
+    public static boolean isDarkTheme() {
+        return darkTheme;
+    }
+
+    public static boolean isFlatLafAvailable() {
+        return flatLafAvailable;
+    }
+
     private static void applyLookAndFeel(boolean dark) {
         String lookAndFeel = dark
                 ? "com.formdev.flatlaf.FlatDarkLaf"
@@ -28,36 +37,75 @@ public class UIUtils {
             UIManager.setLookAndFeel(lookAndFeel);
             darkTheme = dark;
             lookAndFeelInitialized = true;
+            flatLafAvailable = true;
             for (Window window : Window.getWindows()) {
                 SwingUtilities.updateComponentTreeUI(window);
                 window.repaint();
             }
+        } catch (ClassNotFoundException e) {
+            flatLafAvailable = false;
+            if (!applyNimbusFallback()) {
+                System.err.println("FlatLaf and Nimbus are unavailable; using the platform theme.");
+            }
+        } catch (InstantiationException | IllegalAccessException
+                 | UnsupportedLookAndFeelException e) {
+            flatLafAvailable = false;
+            System.err.println("Unable to apply application theme: " + e.getMessage());
+        }
+    }
+
+    private static boolean applyNimbusFallback() {
+        try {
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    UIManager.put("control", COLOR_BG);
+                    UIManager.put("nimbusBase", COLOR_PRIMARY);
+                    UIManager.put("nimbusBlueGrey", new Color(215, 230, 229));
+                    UIManager.put("nimbusLightBackground", COLOR_CARD_BG);
+                    UIManager.put("text", COLOR_TEXT_MAIN);
+                    UIManager.put("Panel.background", COLOR_BG);
+                    darkTheme = false;
+                    lookAndFeelInitialized = true;
+                    updateOpenWindows();
+                    return true;
+                }
+            }
+            return false;
         } catch (ClassNotFoundException | InstantiationException
                  | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            System.err.println("Unable to apply FlatLaf theme: " + e.getMessage());
+            System.err.println("Unable to apply Nimbus fallback theme: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private static void updateOpenWindows() {
+        for (Window window : Window.getWindows()) {
+            SwingUtilities.updateComponentTreeUI(window);
+            window.repaint();
         }
     }
 
     // Theme Palette
-    public static final Color COLOR_PRIMARY = new Color(24, 76, 120);       // Medical Navy Blue
-    public static final Color COLOR_PRIMARY_DARK = new Color(16, 52, 82);   // Dark Navy
-    public static final Color COLOR_PRIMARY_HOVER = new Color(34, 102, 160);// Lighter Navy Blue
-    public static final Color COLOR_ACCENT = new Color(30, 144, 255);       // Dodger Blue
-    public static final Color COLOR_SECONDARY = new Color(52, 152, 219);    // Soft Blue
+    public static final Color COLOR_PRIMARY = new Color(15, 91, 101);
+    public static final Color COLOR_PRIMARY_DARK = new Color(10, 64, 73);
+    public static final Color COLOR_PRIMARY_HOVER = new Color(24, 119, 127);
+    public static final Color COLOR_ACCENT = new Color(27, 145, 137);
+    public static final Color COLOR_SECONDARY = new Color(53, 133, 154);
     
-    public static final Color COLOR_SUCCESS = new Color(39, 174, 96);       // Emerald Green
-    public static final Color COLOR_SUCCESS_LIGHT = new Color(235, 247, 238);
-    public static final Color COLOR_DANGER = new Color(231, 76, 60);        // Crimson Red
-    public static final Color COLOR_DANGER_LIGHT = new Color(253, 237, 236);
-    public static final Color COLOR_WARNING = new Color(243, 156, 18);      // Amber Orange
+    public static final Color COLOR_SUCCESS = new Color(35, 132, 101);
+    public static final Color COLOR_SUCCESS_LIGHT = new Color(231, 245, 239);
+    public static final Color COLOR_DANGER = new Color(190, 67, 75);
+    public static final Color COLOR_DANGER_LIGHT = new Color(251, 237, 238);
+    public static final Color COLOR_WARNING = new Color(190, 132, 48);
     
-    public static final Color COLOR_BG = new Color(245, 247, 250);          // Clean Light Slate
-    public static final Color COLOR_CARD_BG = new Color(255, 255, 255);    // Pure White
-    public static final Color COLOR_CARD_TRANSLUCENT = new Color(255, 255, 255, 225);
+    public static final Color COLOR_BG = new Color(241, 247, 247);
+    public static final Color COLOR_CARD_BG = new Color(255, 255, 255);
+    public static final Color COLOR_CARD_TRANSLUCENT = new Color(255, 255, 255, 238);
     
-    public static final Color COLOR_TEXT_MAIN = new Color(33, 43, 54);      // Deep Slate
-    public static final Color COLOR_TEXT_MUTED = new Color(108, 122, 137);  // Cool Grey
-    public static final Color COLOR_BORDER = new Color(220, 224, 230);
+    public static final Color COLOR_TEXT_MAIN = new Color(31, 55, 62);
+    public static final Color COLOR_TEXT_MUTED = new Color(99, 120, 125);
+    public static final Color COLOR_BORDER = new Color(216, 229, 229);
 
     // Common Fonts
     public static final Font FONT_TITLE = new Font("Segoe UI", Font.BOLD, 28);
@@ -124,7 +172,7 @@ public class UIUtils {
 
         textField.setFont(FONT_REGULAR);
         textField.setForeground(COLOR_TEXT_MAIN);
-        textField.setBackground(Color.WHITE);
+        textField.setBackground(COLOR_CARD_BG);
         textField.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(COLOR_BORDER, 1, true),
                 BorderFactory.createEmptyBorder(6, 12, 6, 12)
@@ -140,7 +188,7 @@ public class UIUtils {
         JComboBox<T> comboBox = new JComboBox<>(items);
         comboBox.setFont(FONT_REGULAR);
         comboBox.setForeground(COLOR_TEXT_MAIN);
-        comboBox.setBackground(Color.WHITE);
+        comboBox.setBackground(COLOR_CARD_BG);
         comboBox.setPreferredSize(new Dimension(200, 36));
         comboBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return comboBox;
@@ -173,7 +221,7 @@ public class UIUtils {
     public static JPanel createHeader(String title, String subtitle, Runnable onBack) {
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(COLOR_PRIMARY);
-        headerPanel.setBorder(new EmptyBorder(16, 24, 16, 24));
+        headerPanel.setBorder(new EmptyBorder(18, 28, 18, 28));
 
         JPanel textPanel = new JPanel(new GridLayout(2, 1, 0, 4));
         textPanel.setOpaque(false);

@@ -1,10 +1,7 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.io.File;
-import java.io.FileWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.io.IOException;
 
 public class BMICalculator {
     // Tab 1: BMI Controls
@@ -15,6 +12,7 @@ public class BMICalculator {
     private static JLabel resultCategoryLabel;
     private static JLabel idealWeightLabel;
     private static JLabel weightDifferenceLabel;
+    private static JTextField bmiPatientNameField;
 
     // Tab 2: BMR & Calorie Controls
     private static JTextField bmrAgeField;
@@ -89,7 +87,7 @@ public class BMICalculator {
         inputTitle.setForeground(UIUtils.COLOR_TEXT_MAIN);
         inputCard.add(inputTitle, BorderLayout.NORTH);
 
-        JPanel formGrid = new JPanel(new GridLayout(4, 1, 0, 15));
+        JPanel formGrid = new JPanel(new GridLayout(5, 1, 0, 12));
         formGrid.setOpaque(false);
 
         unitCombo = UIUtils.createStyledComboBox(new String[]{
@@ -103,20 +101,30 @@ public class BMICalculator {
         formGrid.add(createFieldWrapper("Measurement System:", unitCombo));
         formGrid.add(createFieldWrapper("Body Weight:", weightField));
         formGrid.add(createFieldWrapper("Height:", heightField));
+        bmiPatientNameField = UIUtils.createStyledTextField("Optional");
+        formGrid.add(createFieldWrapper("Patient Name (optional):", bmiPatientNameField));
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         btnPanel.setOpaque(false);
+        JCheckBox saveHistory = new JCheckBox(
+                "Save to " + HealthHistoryStore.getStorageDescription()
+        );
+        saveHistory.setOpaque(false);
+        saveHistory.setToolTipText(
+                "Save this BMI assessment to " + HealthHistoryStore.getStorageDescription() + "."
+        );
         JButton calculateBtn = UIUtils.createStyledButton(" Calculate BMI", UIUtils.COLOR_PRIMARY, Color.WHITE, 160, 38);
-        calculateBtn.addActionListener(e -> calculateBMI());
+        calculateBtn.addActionListener(e -> calculateBMI(saveHistory.isSelected()));
 
         JButton sampleBtn = UIUtils.createStyledButton(" Sample Profile", UIUtils.COLOR_SECONDARY, Color.WHITE, 150, 38);
         sampleBtn.addActionListener(e -> {
             unitCombo.setSelectedIndex(0);
             weightField.setText("72");
             heightField.setText("176");
-            calculateBMI();
+            calculateBMI(saveHistory.isSelected());
         });
 
+        btnPanel.add(saveHistory);
         btnPanel.add(calculateBtn);
         btnPanel.add(sampleBtn);
         formGrid.add(btnPanel);
@@ -171,10 +179,13 @@ public class BMICalculator {
         return container;
     }
 
-    private static void calculateBMI() {
+    private static void calculateBMI(boolean saveToHistory) {
         try {
             double rawWeight = Double.parseDouble(weightField.getText().trim());
             double rawHeight = Double.parseDouble(heightField.getText().trim());
+            if (!Double.isFinite(rawWeight) || !Double.isFinite(rawHeight)) {
+                throw new IllegalArgumentException("Weight and height must be finite numbers.");
+            }
 
             double weightKg;
             double heightMeters;
@@ -236,8 +247,29 @@ public class BMICalculator {
                 weightDifferenceLabel.setText("Your weight is currently optimal! Keep up the good work.");
                 weightDifferenceLabel.setForeground(UIUtils.COLOR_SUCCESS);
             }
+            if (saveToHistory) {
+                try {
+                    HealthHistoryStore.saveBmiAssessment(
+                            bmiPatientNameField.getText(),
+                            weightKg,
+                            heightMeters,
+                            bmi,
+                            category
+                    );
+                } catch (IOException exception) {
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "BMI was calculated, but the assessment could not be saved:\n"
+                                    + exception.getMessage(),
+                            "History Save Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
 
-        } catch (Exception ex) {
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(null, "Enter valid numeric weight and height values.", "Input Error", JOptionPane.WARNING_MESSAGE);
+        } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(null, "Input error: " + ex.getMessage(), "Invalid Input", JOptionPane.WARNING_MESSAGE);
         }
     }

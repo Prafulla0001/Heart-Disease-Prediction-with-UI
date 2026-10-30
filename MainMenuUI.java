@@ -15,67 +15,67 @@ public class MainMenuUI {
         JFrame frame = new JFrame("Health Prediction & Wellness System");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
-        frame.setSize(1100, 750);
+        frame.setMinimumSize(new Dimension(980, 720));
+        frame.setSize(1180, 820);
         frame.setLocationRelativeTo(null);
 
         // Header Panel
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(UIUtils.COLOR_PRIMARY);
-        headerPanel.setBorder(new EmptyBorder(25, 40, 25, 40));
+        headerPanel.setBorder(new EmptyBorder(20, 34, 20, 34));
 
-        JPanel titleContainer = new JPanel(new GridLayout(2, 1, 0, 5));
+        JPanel titleContainer = new JPanel(new GridLayout(2, 1, 0, 4));
         titleContainer.setOpaque(false);
 
-        JLabel appTitle = new JLabel("Health Prediction & Wellness Platform");
-        appTitle.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        JLabel appTitle = new JLabel("Carewell Health");
+        appTitle.setFont(new Font("Segoe UI", Font.BOLD, 27));
         appTitle.setForeground(Color.WHITE);
 
-        JLabel appSubtitle = new JLabel("Intelligent Disease Screening, Body Composition & Medical Guidance");
-        appSubtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        appSubtitle.setForeground(new Color(200, 225, 250));
+        JLabel appSubtitle = new JLabel("HEALTH SCREENING  ·  WELLNESS  ·  EDUCATION");
+        appSubtitle.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        appSubtitle.setForeground(new Color(206, 232, 230));
 
         titleContainer.add(appTitle);
         titleContainer.add(appSubtitle);
-        headerPanel.add(titleContainer, BorderLayout.WEST);
+        JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 0));
+        brandPanel.setOpaque(false);
+        brandPanel.add(createMedicalMark());
+        brandPanel.add(titleContainer);
+        headerPanel.add(brandPanel, BorderLayout.WEST);
 
         // Quote / Status Badge on the right
         JPanel badgePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         badgePanel.setOpaque(false);
-        JLabel versionBadge = new JLabel(" AI Powered v2.0 ");
+        JLabel versionBadge = new JLabel("  PRELIMINARY SCREENING  ");
         versionBadge.setOpaque(true);
-        versionBadge.setBackground(new Color(255, 255, 255, 35));
+        versionBadge.setBackground(new Color(255, 255, 255, 30));
         versionBadge.setForeground(Color.WHITE);
-        versionBadge.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        versionBadge.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        versionBadge.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        versionBadge.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         badgePanel.add(versionBadge);
-        JButton themeButton = UIUtils.createStyledButton("Toggle Theme", Color.WHITE, UIUtils.COLOR_PRIMARY, 130, 34);
-        themeButton.setToolTipText("Switch between light and dark themes");
-        themeButton.addActionListener(e -> UIUtils.toggleTheme());
+        JButton themeButton = UIUtils.createStyledButton("Dark mode", Color.WHITE, UIUtils.COLOR_PRIMARY, 115, 36);
+        themeButton.setEnabled(UIUtils.isFlatLafAvailable());
+        themeButton.setToolTipText(
+                UIUtils.isFlatLafAvailable()
+                        ? "Switch between light and dark themes"
+                        : "Theme switching is available in the Maven build with FlatLaf."
+        );
+        themeButton.addActionListener(e -> {
+            boolean dark = UIUtils.toggleTheme();
+            themeButton.setText(dark ? "Light mode" : "Dark mode");
+        });
         badgePanel.add(themeButton);
         headerPanel.add(badgePanel, BorderLayout.EAST);
 
         frame.add(headerPanel, BorderLayout.NORTH);
 
         // Main Center Area with background
-        JPanel centerPanel = new JPanel(new BorderLayout()) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                ImageIcon bgIcon = new ImageIcon("background.jpg");
-                if (bgIcon.getIconWidth() > 0) {
-                    g.drawImage(bgIcon.getImage(), 0, 0, getWidth(), getHeight(), this);
-                    g.setColor(new Color(245, 247, 250, 210)); // Soft overlay for readability
-                    g.fillRect(0, 0, getWidth(), getHeight());
-                } else {
-                    g.setColor(UIUtils.COLOR_BG);
-                    g.fillRect(0, 0, getWidth(), getHeight());
-                }
-            }
-        };
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 8));
+        centerPanel.setBackground(UIUtils.COLOR_BG);
 
-        JPanel gridPanel = new JPanel(new GridLayout(2, 3, 24, 24));
+        JPanel gridPanel = new JPanel(new GridLayout(2, 3, 18, 18));
         gridPanel.setOpaque(false);
-        gridPanel.setBorder(new EmptyBorder(25, 40, 35, 40));
+        gridPanel.setBorder(new EmptyBorder(18, 34, 28, 34));
 
         // Card 1: Heart Disease
         JPanel heartCard = createDashboardCard(
@@ -154,26 +154,48 @@ public class MainMenuUI {
         gridPanel.add(bloodPressureCard);
         gridPanel.add(historyCard);
 
-        JLabel healthQuote = new JLabel(
-                "Small, consistent health habits can make a meaningful difference.",
-                JLabel.CENTER
+        JPanel welcomePanel = new JPanel(new BorderLayout(12, 6));
+        welcomePanel.setOpaque(false);
+        welcomePanel.setBorder(new EmptyBorder(20, 42, 0, 42));
+        JPanel welcomeCopy = new JPanel(new GridLayout(2, 1, 0, 4));
+        welcomeCopy.setOpaque(false);
+        JLabel welcomeTitle = new JLabel("Your health, at a glance");
+        welcomeTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        welcomeTitle.setForeground(UIUtils.COLOR_TEXT_MAIN);
+        JLabel welcomeSubtitle = new JLabel(
+                "Choose a tool to explore wellness information and preliminary screening."
         );
-        healthQuote.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        healthQuote.setForeground(UIUtils.COLOR_PRIMARY);
-        healthQuote.setBorder(new EmptyBorder(18, 12, 4, 12));
-        centerPanel.add(healthQuote, BorderLayout.NORTH);
+        welcomeSubtitle.setFont(UIUtils.FONT_REGULAR);
+        welcomeSubtitle.setForeground(UIUtils.COLOR_TEXT_MUTED);
+        welcomeCopy.add(welcomeTitle);
+        welcomeCopy.add(welcomeSubtitle);
+        welcomePanel.add(welcomeCopy, BorderLayout.CENTER);
+
+        JLabel careNote = new JLabel("  EDUCATIONAL USE ONLY  ");
+        careNote.setOpaque(true);
+        careNote.setBackground(new Color(225, 240, 237));
+        careNote.setForeground(UIUtils.COLOR_PRIMARY);
+        careNote.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        careNote.setBorder(new EmptyBorder(9, 8, 9, 8));
+        welcomePanel.add(careNote, BorderLayout.EAST);
+        centerPanel.add(welcomePanel, BorderLayout.NORTH);
         centerPanel.add(gridPanel, BorderLayout.CENTER);
         frame.add(centerPanel, BorderLayout.CENTER);
 
-        // Footer with Disclaimer
-        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel footerPanel = new JPanel(new BorderLayout());
         footerPanel.setBackground(Color.WHITE);
-        footerPanel.setBorder(new EmptyBorder(12, 20, 12, 20));
+        footerPanel.setBorder(new EmptyBorder(12, 34, 12, 34));
 
-        JLabel footerLabel = new JLabel("Disclaimer: This software is intended for educational and preliminary screening purposes. Always consult a medical professional for clinical diagnosis.");
+        JLabel footerLabel = new JLabel(
+                "For education and preliminary screening only. Not a diagnosis or substitute for professional medical care."
+        );
         footerLabel.setFont(new Font("Segoe UI", Font.ITALIC, 12));
         footerLabel.setForeground(UIUtils.COLOR_TEXT_MUTED);
-        footerPanel.add(footerLabel);
+        footerPanel.add(footerLabel, BorderLayout.CENTER);
+        JLabel footerMark = new JLabel("CAREWELL  ·  WELLNESS");
+        footerMark.setFont(new Font("Segoe UI", Font.BOLD, 10));
+        footerMark.setForeground(UIUtils.COLOR_PRIMARY);
+        footerPanel.add(footerMark, BorderLayout.EAST);
 
         frame.add(footerPanel, BorderLayout.SOUTH);
         frame.setVisible(true);
@@ -203,20 +225,14 @@ public class MainMenuUI {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                int arc = 16;
-                // Card Background
-                g2.setColor(Color.WHITE);
-                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), arc, arc));
-
-                // Left Accent Stripe
-                g2.setColor(accentColor);
-                g2.fillRoundRect(0, 0, 8, getHeight(), arc, arc);
-                g2.fillRect(4, 0, 4, getHeight());
-
-                // Subtle Border
+                int arc = 20;
+                g2.setColor(new Color(15, 48, 54, hovered ? 22 : 12));
+                g2.fill(new RoundRectangle2D.Float(2, 4, getWidth() - 4, getHeight() - 4, arc, arc));
+                g2.setColor(UIUtils.COLOR_CARD_BG);
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth() - 2, getHeight() - 6, arc, arc));
                 g2.setColor(hovered ? accentColor : UIUtils.COLOR_BORDER);
                 g2.setStroke(new BasicStroke(hovered ? 2f : 1f));
-                g2.draw(new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, arc, arc));
+                g2.draw(new RoundRectangle2D.Float(0, 0, getWidth() - 2, getHeight() - 7, arc, arc));
 
                 g2.dispose();
                 super.paintComponent(g);
@@ -225,25 +241,38 @@ public class MainMenuUI {
 
         card.setLayout(new BorderLayout());
         card.setOpaque(false);
-        card.setBorder(new EmptyBorder(22, 26, 22, 26));
-        card.setPreferredSize(new Dimension(420, 180));
+        card.setBorder(new EmptyBorder(15, 18, 12, 18));
+        card.setPreferredSize(new Dimension(330, 205));
 
-        JPanel contentPanel = new JPanel(new GridLayout(2, 1, 0, 8));
+        JPanel contentPanel = new JPanel(new BorderLayout(12, 10));
         contentPanel.setOpaque(false);
+        JPanel heading = new JPanel(new BorderLayout(11, 0));
+        heading.setOpaque(false);
+        JLabel icon = new JLabel(cardInitials(title), JLabel.CENTER);
+        icon.setOpaque(true);
+        icon.setBackground(new Color(
+                Math.min(255, accentColor.getRed() + 210),
+                Math.min(255, accentColor.getGreen() + 210),
+                Math.min(255, accentColor.getBlue() + 210)
+        ));
+        icon.setForeground(accentColor.darker());
+        icon.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        icon.setPreferredSize(new Dimension(42, 42));
+        heading.add(icon, BorderLayout.WEST);
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         titleLabel.setForeground(UIUtils.COLOR_TEXT_MAIN);
+        heading.add(titleLabel, BorderLayout.CENTER);
+        contentPanel.add(heading, BorderLayout.NORTH);
 
-        JLabel descLabel = new JLabel("<html><body style='width: 280px;'>" + desc + "</body></html>");
-        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        JLabel descLabel = new JLabel("<html><body style='width: 260px;'>" + desc + "</body></html>");
+        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         descLabel.setForeground(UIUtils.COLOR_TEXT_MUTED);
-
-        contentPanel.add(titleLabel);
-        contentPanel.add(descLabel);
+        contentPanel.add(descLabel, BorderLayout.CENTER);
         card.add(contentPanel, BorderLayout.CENTER);
 
-        JButton actionBtn = UIUtils.createStyledButton(btnText, accentColor, Color.WHITE, 160, 40);
+        JButton actionBtn = UIUtils.createStyledButton(btnText + "  →", accentColor, Color.WHITE, 148, 36);
         actionBtn.addActionListener(e -> onClick.run());
 
         JPanel btnWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -252,5 +281,24 @@ public class MainMenuUI {
         card.add(btnWrapper, BorderLayout.SOUTH);
 
         return card;
+    }
+
+    private static JLabel createMedicalMark() {
+        JLabel mark = new JLabel("+", JLabel.CENTER);
+        mark.setOpaque(true);
+        mark.setBackground(new Color(236, 248, 246));
+        mark.setForeground(UIUtils.COLOR_PRIMARY);
+        mark.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        mark.setPreferredSize(new Dimension(52, 52));
+        mark.setBorder(BorderFactory.createLineBorder(new Color(188, 224, 218), 2, true));
+        return mark;
+    }
+
+    private static String cardInitials(String title) {
+        String[] words = title.split("\\s+");
+        if (words.length == 1) {
+            return words[0].substring(0, 1);
+        }
+        return (words[0].substring(0, 1) + words[1].substring(0, 1)).toUpperCase();
     }
 }

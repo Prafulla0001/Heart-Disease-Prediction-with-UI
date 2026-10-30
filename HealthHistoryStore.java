@@ -39,21 +39,65 @@ public final class HealthHistoryStore {
             throw new IllegalArgumentException("Invalid patient age or risk score.");
         }
 
+        saveAssessment(
+                patientName, age, gender, "Heart Disease", inputs, result,
+                riskLevel, riskScore, "%"
+        );
+    }
+
+    public static synchronized void saveBmiAssessment(
+            String patientName,
+            double weightKg,
+            double heightMeters,
+            double bmi,
+            String category
+    ) throws IOException {
+        if (!Double.isFinite(weightKg) || weightKg <= 0
+                || !Double.isFinite(heightMeters) || heightMeters <= 0
+                || !Double.isFinite(bmi) || bmi <= 0) {
+            throw new IllegalArgumentException("Invalid BMI assessment measurements.");
+        }
+        JSONObject inputs = new JSONObject()
+                .put("weight_kg", weightKg)
+                .put("height_m", heightMeters)
+                .put("bmi", bmi);
+        saveAssessment(
+                patientName, 0, "Not specified", "BMI", inputs, category,
+                category, bmi, "kg/m²"
+        );
+    }
+
+    private static void saveAssessment(
+            String patientName,
+            int age,
+            String gender,
+            String testType,
+            JSONObject inputs,
+            String result,
+            String riskLevel,
+            double score,
+            String scoreUnit
+    ) throws IOException {
         String normalizedName = patientName == null || patientName.isBlank()
                 ? "Guest Patient"
                 : patientName.trim();
-        JSONArray history = readHistory();
         JSONObject entry = new JSONObject()
                 .put("id", UUID.randomUUID().toString())
                 .put("patient_name", normalizedName)
                 .put("age", age)
                 .put("gender", gender)
-                .put("test_type", "Heart Disease")
+                .put("test_type", testType)
                 .put("inputs", new JSONObject(inputs.toString()))
                 .put("result", result)
                 .put("risk_level", riskLevel)
-                .put("risk_score", riskScore)
+                .put("risk_score", score)
+                .put("score_unit", scoreUnit)
                 .put("timestamp", Instant.now().toString());
+        if (usesMySql()) {
+            MySqlHealthHistoryStore.save(entry);
+            return;
+        }
+        JSONArray history = readHistory();
         history.put(entry);
         writeHistory(history);
     }
@@ -66,6 +110,9 @@ public final class HealthHistoryStore {
     ) throws IOException {
         if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
             throw new IllegalArgumentException("Start date must not be after end date.");
+        }
+        if (usesMySql()) {
+            return MySqlHealthHistoryStore.find(searchText, testType, fromDate, toDate);
         }
 
         String search = searchText == null
@@ -101,6 +148,25 @@ public final class HealthHistoryStore {
         }
         results.sort(Comparator.comparing((HistoryEntry record) -> record.timestamp).reversed());
         return results;
+    }
+
+    public static String getStorageDescription() {
+        return "mysql".equalsIgnoreCase(
+                ConfigLoader.get("HEALTH_HISTORY_STORAGE", "local").trim()
+        ) ? "hosted MySQL" : "local JSON file";
+    }
+
+    private static boolean usesMySql() throws IOException {
+        String storage = ConfigLoader.get("HEALTH_HISTORY_STORAGE", "local").trim();
+        if ("local".equalsIgnoreCase(storage)) {
+            return false;
+        }
+        if ("mysql".equalsIgnoreCase(storage)) {
+            return true;
+        }
+        throw new IOException(
+                "HEALTH_HISTORY_STORAGE must be set to either 'local' or 'mysql'."
+        );
     }
 
     private static JSONArray readHistory() throws IOException {
@@ -146,18 +212,20 @@ public final class HealthHistoryStore {
         public final String result;
         public final String riskLevel;
         public final double riskScore;
+        public final String scoreUnit;
         public final String timestamp;
 
-        private HistoryEntry(JSONObject entry) {
+        HistoryEntry(JSONObject entry) {
             id = entry.getString("id");
             patientName = entry.getString("patient_name");
-            age = entry.getInt("age");
+            age = entry.optInt("age", 0);
             gender = entry.getString("gender");
             testType = entry.getString("test_type");
             inputs = entry.getJSONObject("inputs");
             result = entry.getString("result");
             riskLevel = entry.getString("risk_level");
             riskScore = entry.getDouble("risk_score");
+            scoreUnit = entry.optString("score_unit", "%");
             timestamp = entry.getString("timestamp");
         }
     }

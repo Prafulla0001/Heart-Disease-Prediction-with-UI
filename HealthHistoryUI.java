@@ -16,9 +16,9 @@ public class HealthHistoryUI {
     private final JTextField fromDateField = UIUtils.createStyledTextField("YYYY-MM-DD");
     private final JTextField toDateField = UIUtils.createStyledTextField("YYYY-MM-DD");
     private final JComboBox<String> testTypeCombo =
-            UIUtils.createStyledComboBox(new String[]{"All", "Heart Disease"});
+            UIUtils.createStyledComboBox(new String[]{"All", "Heart Disease", "BMI"});
     private final DefaultTableModel tableModel = new DefaultTableModel(
-            new String[]{"Date", "Patient", "Age", "Gender", "Test", "Result", "Risk"},
+            new String[]{"Date", "Patient", "Age", "Gender", "Test", "Result", "Score / Category"},
             0
     ) {
         @Override
@@ -40,7 +40,7 @@ public class HealthHistoryUI {
         frame.setLayout(new BorderLayout());
         frame.add(UIUtils.createHeader(
                 "Health Assessment History",
-                "Search locally saved screening results",
+                "Search saved screening results",
                 () -> {
                     frame.dispose();
                     MainMenuUI.launchMainMenu();
@@ -93,7 +93,8 @@ public class HealthHistoryUI {
         content.add(tableScroll, BorderLayout.CENTER);
 
         JLabel privacyNote = new JLabel(
-                "History is stored locally in health_history.json. Only assessments explicitly opted in on the prediction screen are saved."
+                "History is stored in " + HealthHistoryStore.getStorageDescription()
+                        + ". Only explicitly opted-in assessments are saved."
         );
         privacyNote.setFont(UIUtils.FONT_SMALL);
         privacyNote.setForeground(UIUtils.COLOR_TEXT_MUTED);
@@ -129,11 +130,13 @@ public class HealthHistoryUI {
                         DISPLAY_DATE.format(java.time.Instant.parse(entry.timestamp)
                                 .atZone(java.time.ZoneId.systemDefault())),
                         entry.patientName,
-                        entry.age,
+                        entry.age > 0 ? entry.age : "—",
                         entry.gender,
                         entry.testType,
                         entry.result,
-                        String.format("%.1f%% (%s)", entry.riskScore, entry.riskLevel)
+                        entry.scoreUnit.equals("%")
+                                ? String.format("%.1f%% (%s)", entry.riskScore, entry.riskLevel)
+                                : String.format("%.1f %s (%s)", entry.riskScore, entry.scoreUnit, entry.riskLevel)
                 });
             }
         } catch (DateTimeParseException exception) {
@@ -179,7 +182,8 @@ public class HealthHistoryUI {
     private void showHistoryError(IOException exception) {
         JOptionPane.showMessageDialog(
                 frame,
-                "Could not read local history:\n" + exception.getMessage(),
+                "Could not read " + HealthHistoryStore.getStorageDescription()
+                        + ":\n" + exception.getMessage(),
                 "History Error",
                 JOptionPane.ERROR_MESSAGE
         );
